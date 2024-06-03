@@ -13,6 +13,7 @@ repositories {
 dependencies {
     implementation("org.jooq:jooq:3.19.9")
     implementation("io.r2dbc:r2dbc-spi:1.0.0.RELEASE")
+    implementation("io.r2dbc:r2dbc-pool:1.0.1.RELEASE")
     implementation("org.postgresql:r2dbc-postgresql:1.0.4.RELEASE")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3")
 

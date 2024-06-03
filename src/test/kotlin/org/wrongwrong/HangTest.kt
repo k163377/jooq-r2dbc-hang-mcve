@@ -1,5 +1,7 @@
 package org.wrongwrong
 
+import io.r2dbc.pool.ConnectionPool
+import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.ConnectionFactories
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
@@ -51,6 +53,8 @@ class HangTest {
     val factory =
         ConnectionFactories.get("r2dbc:postgresql://jooq-16669-root:jooq-16669-root@localhost:5432/jooq-16669-db")
     val factoryCtxt = DSL.using(factory, SQLDialect.POSTGRES)
+    val connectionPoolContext =
+        ConnectionPoolConfiguration.builder(factory).build().let { DSL.using(ConnectionPool(it), SQLDialect.POSTGRES) }
     val connectionCtxt = runBlocking { DSL.using(factory.create().awaitSingle(), SQLDialect.POSTGRES) }
 
     fun resetTestData(ctxt: DSLContext) = runBlocking {
@@ -129,10 +133,11 @@ class HangTest {
     @Test
     fun test() {
         try {
-            resetTestData(connectionCtxt)
-
-            repeatSelectTest(connectionCtxt)
-            repeatSelectTest(factoryCtxt)
+            resetTestData(connectionPoolContext)
+            repeatSelectTest(connectionPoolContext)
+            // resetTestData(connectionCtxt)
+            // repeatSelectTest(connectionCtxt)
+            // repeatSelectTest(factoryCtxt)
         } catch (e: Throwable) {
             e.printStackTrace()
             throw e
