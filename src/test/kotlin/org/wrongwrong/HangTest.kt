@@ -57,17 +57,19 @@ class HangTest {
         val ids = (0 until (SIZE / 2)).map { UUID.randomUUID() }
         val now = OffsetDateTime.now()
 
-        (0 until SIZE).map {
-            AccountsRecord().apply {
-                id = ids[it / 2]
-                validFrom = now
-                validTo = INFINITE_DATETIME
-                transactFrom = now
-                transactTo = if (it % 2 == 0) now else INFINITE_DATETIME
-                email = "$it@example.com"
+        (0 until SIZE)
+            .asSequence()
+            .map {
+                AccountsRecord().apply {
+                    id = ids[it / 2]
+                    validFrom = now
+                    validTo = INFINITE_DATETIME
+                    transactFrom = now
+                    transactTo = if (it % 2 == 0) now else INFINITE_DATETIME
+                    email = "$it@example.com"
+                }
             }
-        }
-            .chunked(1000)
+            .chunked(5000)
             .forEach {
                 ctxt.insertInto(ACCOUNTS)
                     .columns(
