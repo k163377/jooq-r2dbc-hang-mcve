@@ -12,6 +12,8 @@ import org.jooq.SQLDialect
 import org.jooq.TableField
 import org.jooq.generated.tables.records.AccountsRecord
 import org.jooq.generated.tables.references.ACCOUNTS
+import org.jooq.generated.tables.references.CORPORATIONS
+import org.jooq.generated.tables.references.NATURAL_PERSONS
 import org.jooq.impl.DSL
 import org.jooq.impl.DSL.field
 import org.jooq.impl.DSL.min
@@ -100,6 +102,10 @@ class HangTest {
         .from(ACCOUNTS)
         .innerJoin(TEMP_ACCOUNTS)
         .on(ACCOUNTS.ID.eq(field(name(TEMP_ACCOUNTS, ACCOUNT_ID), UUID::class.java)))
+        .leftJoin(NATURAL_PERSONS)
+        .on(ACCOUNTS.CONSUMER_RECORD_ID.eq(NATURAL_PERSONS.CONSUMER_RECORD_ID))
+        .leftJoin(CORPORATIONS)
+        .on(ACCOUNTS.CONSUMER_RECORD_ID.eq(CORPORATIONS.CONSUMER_RECORD_ID))
         .orderBy(field(name(TEMP_ACCOUNTS, CREATED_AT)).desc())
         .limit(500)
         .asFlow()

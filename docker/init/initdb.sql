@@ -14,3 +14,25 @@ create table accounts
     email                 varchar(254)                                                     not null,
     is_email_subscription boolean
 );
+
+create table corporations
+(
+    consumer_record_id uuid                     default gen_random_uuid() not null
+        primary key,
+    name               varchar(320)                                       not null,
+    name_katakana      varchar(320)                                       not null,
+    created_at         timestamp with time zone default CURRENT_TIMESTAMP,
+    updated_at         timestamp with time zone default CURRENT_TIMESTAMP
+);
+
+create table natural_persons
+(
+    consumer_record_id uuid                     default gen_random_uuid()                           not null
+        primary key,
+    name               varchar(320)                                                                 not null,
+    name_katakana      varchar(320)                                                                 not null,
+    date_of_birth      date                                                                         not null,
+    sex                integer                                                                      not null,
+    created_at         timestamp with time zone default CURRENT_TIMESTAMP,
+    updated_at         timestamp with time zone default CURRENT_TIMESTAMP
+);
