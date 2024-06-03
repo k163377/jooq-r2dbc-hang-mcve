@@ -38,7 +38,7 @@ fun <T : TableField<R, OffsetDateTime?>, R : Record> biTemporalValidStatusesCond
 
 class HangTest {
     companion object {
-        const val SIZE = 1500000
+        const val SIZE = 20000000
         val INFINITE_DATETIME: OffsetDateTime = OffsetDateTime.parse("2200-12-31T23:59:59Z")
 
         const val TEMP_ACCOUNTS = "temp_accounts"
@@ -69,7 +69,7 @@ class HangTest {
                     email = "$it@example.com"
                 }
             }
-            .chunked(5000)
+            .chunked(10000)
             .forEach {
                 ctxt.insertInto(ACCOUNTS)
                     .columns(
@@ -96,10 +96,12 @@ class HangTest {
                 .where(biTemporalValidStatusesCondition(ACCOUNTS.TRANSACT_TO))
                 .groupBy(ACCOUNTS.ID)
         )
-        .select(ACCOUNTS.ID, ACCOUNTS.TEL, ACCOUNTS.EMAIL)
+        .select(ACCOUNTS.asterisk())
         .from(ACCOUNTS)
         .innerJoin(TEMP_ACCOUNTS)
         .on(ACCOUNTS.ID.eq(field(name(TEMP_ACCOUNTS, ACCOUNT_ID), UUID::class.java)))
+        .orderBy(field(name(TEMP_ACCOUNTS, CREATED_AT)).desc())
+        .limit(500)
         .asFlow()
 
     fun repeatSelectTest(ctxt: DSLContext) {
@@ -123,8 +125,8 @@ class HangTest {
         try {
             resetTestData(connectionCtxt)
 
-            repeatSelectTest(factoryCtxt)
             repeatSelectTest(connectionCtxt)
+            repeatSelectTest(factoryCtxt)
         } catch (e: Throwable) {
             e.printStackTrace()
             throw e
