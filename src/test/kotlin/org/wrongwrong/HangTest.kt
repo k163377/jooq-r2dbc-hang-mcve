@@ -22,6 +22,7 @@ import org.jooq.impl.DSL.min
 import org.jooq.impl.DSL.name
 import org.junit.jupiter.api.Test
 import org.wrongwrong.HangTest.Companion.INFINITE_DATETIME
+import reactor.kotlin.core.publisher.toMono
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.system.measureTimeMillis
@@ -53,8 +54,12 @@ class HangTest {
     val factory =
         ConnectionFactories.get("r2dbc:postgresql://jooq-16669-root:jooq-16669-root@localhost:5432/jooq-16669-db")
     val factoryCtxt = DSL.using(factory, SQLDialect.POSTGRES)
-    val connectionPoolContext =
-        ConnectionPoolConfiguration.builder(factory).build().let { DSL.using(ConnectionPool(it), SQLDialect.POSTGRES) }
+    val connectionPoolContext = ConnectionPoolConfiguration.builder(factory)
+        .postAllocate {
+            it.createStatement("SET app.current_tenant = 'foo'").execute().toMono().then()
+        }
+        .build()
+        .let { DSL.using(ConnectionPool(it), SQLDialect.POSTGRES) }
     val connectionCtxt = runBlocking { DSL.using(factory.create().awaitSingle(), SQLDialect.POSTGRES) }
 
     fun resetTestData(ctxt: DSLContext) = runBlocking {

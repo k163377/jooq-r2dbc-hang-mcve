@@ -16,6 +16,7 @@ dependencies {
     implementation("io.r2dbc:r2dbc-pool:1.0.1.RELEASE")
     implementation("org.postgresql:r2dbc-postgresql:1.0.4.RELEASE")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.7.3")
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.2.2")
 
     // for codegen
     compileOnly("org.postgresql:postgresql:42.6.2")
