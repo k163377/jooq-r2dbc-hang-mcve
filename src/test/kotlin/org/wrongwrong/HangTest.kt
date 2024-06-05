@@ -3,6 +3,7 @@ package org.wrongwrong
 import io.r2dbc.pool.ConnectionPool
 import io.r2dbc.pool.ConnectionPoolConfiguration
 import io.r2dbc.spi.ConnectionFactories
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
@@ -22,6 +23,7 @@ import org.jooq.impl.DSL.min
 import org.jooq.impl.DSL.name
 import org.junit.jupiter.api.Test
 import org.wrongwrong.HangTest.Companion.INFINITE_DATETIME
+import reactor.core.publisher.Flux
 import reactor.kotlin.core.publisher.toMono
 import java.time.OffsetDateTime
 import java.util.*
@@ -110,14 +112,18 @@ class HangTest {
         .select(ACCOUNTS.asterisk())
         .from(ACCOUNTS)
         .innerJoin(TEMP_ACCOUNTS)
-        .on(ACCOUNTS.ID.eq(field(name(TEMP_ACCOUNTS, ACCOUNT_ID), UUID::class.java)))
+        .on(
+            ACCOUNTS.ID.eq(field(name(TEMP_ACCOUNTS, ACCOUNT_ID), UUID::class.java))
+                .and(biTemporalCurrentStatusCondition(ACCOUNTS.VALID_FROM, ACCOUNTS.VALID_TO, ACCOUNTS.TRANSACT_TO))
+        )
         .leftJoin(NATURAL_PERSONS)
         .on(ACCOUNTS.CONSUMER_RECORD_ID.eq(NATURAL_PERSONS.CONSUMER_RECORD_ID))
         .leftJoin(CORPORATIONS)
         .on(ACCOUNTS.CONSUMER_RECORD_ID.eq(CORPORATIONS.CONSUMER_RECORD_ID))
+        .where(ACCOUNTS.EMAIL.like("%@%"))
         .orderBy(field(name(TEMP_ACCOUNTS, CREATED_AT)).desc())
-        .limit(500)
-        .asFlow()
+        .limit(200)
+        .let { Flux.from(it) }
 
     fun repeatSelectTest(ctxt: DSLContext) {
         println("start repeatSearch\n")
@@ -125,10 +131,32 @@ class HangTest {
         (1..10).forEach {
             runBlocking {
                 val time = measureTimeMillis {
-                    val result = select(ctxt).toList()
+                    val result = select(ctxt).asFlow().map { it.into(AccountsRecord::class) }.toList()
                     println(result.size)
                 }
 
+                println("${String.format("%03d", it)}: $time")
+                println()
+            }
+        }
+    }
+
+    fun repeatSelectTest2() {
+        println("start repeatSearch\n")
+
+        (1..10).forEach {
+            runBlocking {
+                val time = measureTimeMillis {
+                    val result = Flux.usingWhen(
+                        factory.create(),
+                        { select(DSL.using(it, SQLDialect.POSTGRES)) },
+                        { it.close() }
+                    )
+                        .asFlow()
+                        .map { it.into(AccountsRecord::class) }
+                        .toList()
+                    println(result.size)
+                }
                 println("${String.format("%03d", it)}: $time")
                 println()
             }
@@ -139,7 +167,7 @@ class HangTest {
     fun test() {
         try {
             resetTestData(connectionPoolContext)
-            repeatSelectTest(connectionPoolContext)
+            repeatSelectTest2()
             // resetTestData(connectionCtxt)
             // repeatSelectTest(connectionCtxt)
             // repeatSelectTest(factoryCtxt)
