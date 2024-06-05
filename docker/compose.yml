@@ -1,7 +1,13 @@
 services:
   postgres-jooq-16669:
     image: postgres:15.7-alpine
-    command: postgres
+    command: >
+      postgres
+       -c log_destination=stderr
+       -c log_connections=on
+       -c log_disconnections=on
+       -c log_duration=on
+       -c log_statement=all
     container_name: jooq-16669-postgres
     restart: always
     volumes:
